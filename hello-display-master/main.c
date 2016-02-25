@@ -1,20 +1,17 @@
 #include <pic32mx.h>
 #include <stdint.h>
 
-#define DISPLAY_VDD PORTFbits.RF6
-#define DISPLAY_VBATT PORTFbits.RF5
-#define DISPLAY_COMMAND_DATA PORTFbits.RF4
-#define DISPLAY_RESET PORTGbits.RG9
+#define DISPLAY_CHANGE_TO_COMMAND_MODE (PORTFCLR = 0x10)
+#define DISPLAY_CHANGE_TO_DATA_MODE (PORTFSET = 0x10)
 
+#define DISPLAY_ACTIVATE_RESET (PORTGCLR = 0x200)
+#define DISPLAY_DO_NOT_RESET (PORTGSET = 0x200)
 
-#define DISPLAY_VDD_PORT PORTF
-#define DISPLAY_VDD_MASK 0x40
-#define DISPLAY_VBATT_PORT PORTF
-#define DISPLAY_VBATT_MASK 0x20
-#define DISPLAY_COMMAND_DATA_PORT PORTF
-#define DISPLAY_COMMAND_DATA_MASK 0x10
-#define DISPLAY_RESET_PORT PORTG
-#define DISPLAY_RESET_MASK 0x200
+#define DISPLAY_ACTIVATE_VDD (PORTFCLR = 0x40)
+#define DISPLAY_ACTIVATE_VBAT (PORTFCLR = 0x20)
+
+#define DISPLAY_TURN_OFF_VDD (PORTFSET = 0x40)
+#define DISPLAY_TURN_OFF_VBAT (PORTFSET = 0x20)
 
 char snake[4][128];
 int lengthp = 8;
@@ -86,7 +83,7 @@ char icon[] = {
     128, 128, 128, 128, 128, 128, 128, 255,
 };
 
-void delay(int cyc) {
+void quicksleep(int cyc) {
 	int i;
 	for(i = cyc; i > 0; i--);
 }
@@ -99,16 +96,16 @@ uint8_t spi_send_recv(uint8_t data) {
 }
 
 void display_init() {
-	DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
-	delay(10);
-	DISPLAY_VDD_PORT &= ~DISPLAY_VDD_MASK;
-	delay(1000000);
+        DISPLAY_CHANGE_TO_COMMAND_MODE;
+	quicksleep(10);
+	DISPLAY_ACTIVATE_VDD;
+	quicksleep(1000000);
 	
 	spi_send_recv(0xAE);
-	DISPLAY_RESET_PORT &= ~DISPLAY_RESET_MASK;
-	delay(10);
-	DISPLAY_RESET_PORT |= DISPLAY_RESET_MASK;
-	delay(10);
+	DISPLAY_ACTIVATE_RESET;
+	quicksleep(10);
+	DISPLAY_DO_NOT_RESET;
+	quicksleep(10);
 	
 	spi_send_recv(0x8D);
 	spi_send_recv(0x14);
@@ -116,8 +113,8 @@ void display_init() {
 	spi_send_recv(0xD9);
 	spi_send_recv(0xF1);
 	
-	DISPLAY_VBATT_PORT &= ~DISPLAY_VBATT_MASK;
-	delay(10000000);
+	DISPLAY_ACTIVATE_VBAT;
+	quicksleep(10000000);
 	
 	spi_send_recv(0xA1);
 	spi_send_recv(0xC8);
@@ -174,14 +171,14 @@ void display_update() {
 	int i, j, k;
 	int c;
 	for(i = 0; i < 4; i++) {
-		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		DISPLAY_CHANGE_TO_COMMAND_MODE;
 		spi_send_recv(0x22);
 		spi_send_recv(i);
 		
 		spi_send_recv(0x00);
 		spi_send_recv(0x10);
 		
-		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		DISPLAY_CHANGE_TO_DATA_MODE;
 		
 		for(j = 0; j < 128; j++)
 			spi_send_recv(icon[i*128 + j]);
@@ -252,7 +249,7 @@ int main(void) {
         while(1)
         {
             display_update();
-            delay(1000000);
+            quicksleep(10000000);
             display_snake();
             snake_length();
 	}
