@@ -8,14 +8,27 @@
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
 
-char textbuffer[4][16];
+#define dLengthEnd (80)
+#define dGlobalPage (2)
+#define dLengthStart (60)
 
 char snake[4][128];
-int lengthEnd = 64;
-int lengthStart = 60;
-int globalPage = 2;
+int lengthEnd = dLengthEnd;
+int lengthStart = dLengthStart;
+int globalPage = dGlobalPage;
+int snakeLength = dLengthEnd - dLengthStart;
 int buttonStatus = 1;
-int snakeHead = 64 + (2 * 128);
+int snakeTail[512];
+
+int column;
+int page;
+int pixel;
+int apple;
+int score;
+int prevButtonStatus = 0;
+int prevButtonStatus1 = 0;
+
+int snakeHead = 8 * (dLengthEnd + (dGlobalPage * 128));
 char icon[] = {
     255, 1, 1, 1, 1, 1, 1, 1, 
     1, 1, 1, 1, 1, 1, 1, 1, 

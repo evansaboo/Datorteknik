@@ -27,6 +27,15 @@ extern int lengthStart;
 extern int globalPage;
 extern int buttonStatus;
 extern int snakeHead;
+extern int snakeTail[];
+extern int snakeLength;
+extern int column;
+extern int page;
+extern int pixel;
+extern int apple;
+extern int score;
+extern int prevButtonStatus;
+extern int prevButtonStatus1;
 /* Declare functions written by students.
    Note: Since we declare these functions here,
    students must define their functions with the exact types

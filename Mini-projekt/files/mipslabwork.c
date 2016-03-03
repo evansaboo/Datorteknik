@@ -27,53 +27,67 @@ void user_isr( void )
 /* Lab-specific initialization goes here */
 void labinit( void )
 {
-
+    
+    ledinit = (volatile int*) 0xbf886100;
+    *ledinit = 0;
+    ledoutput = (volatile int*) 0xbf886110;
+    
     int * dinit = (int *)PORTD;
     *dinit = 1;
     int * dinput = (int *)PORTD; 
     *dinput &= 0x0fe0;
     
-
-    
     T2CON = 0x070;
-    PR2 = (80000000 / 256);
+    PR2 = (80000000 / 256 / 10);
     TMR2 = 0;
-    int i;
-                for (i = lengthStart; i <= lengthEnd; i++)
-            {
-                snake[globalPage][i] = 1;
-            }
-
-    T2CONSET = 0x8000;
     
+    int x, i;
+
+    for (i = 0; i < 4; i++)
+        for (x = 0; x < 128; x++)
+           snake[i][x] = icon[(i * 128) + x]; 
+    
+     for (i = lengthStart; i <= lengthEnd; i++)
+        snake[globalPage][i] = 1;
+    
+    for(i = 0; i < (snakeLength); i++)
+        snakeTail[i] = snakeHead - (8 * ((lengthEnd - lengthStart) - (i)));
+    
+    T2CONSET = 0x8000;
+         set_apple();
+  
     return;
 }
 
 /* This function is called repetitively from the main program */
 void labwork( void ) {
+    int nextButton;
    int btnpress = getbtns();
    if(IFS(0)){
        IFS(0) = 0;
-            display_update();
-            display_snake();
             snake_length();
+            display_update();
+            nextButton += 1;
+            *ledoutput = score;
    }
-  
-  if(btnpress & 0x01){
+   if(nextButton > 2){
+    if((btnpress & 0x01) == 1 && (prevButtonStatus != (btnpress & 0x01))){    
       buttonStatus++;
-      if (buttonStatus > 3)
+      nextButton = 0;
+      if (buttonStatus > 3)        
           buttonStatus = 0;
-      quicksleep(10000000);
   }   
-  else if(btnpress & 0x02)
-  {
+    else if((btnpress & 0x02) == 2 && (prevButtonStatus1 != (btnpress & 0x02)))
+    {
       buttonStatus--;
+      nextButton = 0;
+      prevButtonStatus1 = (btnpress & 0x02);
       if (buttonStatus < 0)
           buttonStatus = 3;
-      quicksleep(10000000);
-  }
-  
-  if(btnpress & 0x04){
-    
-  }
-}
+    }
+   }
+   prevButtonStatus = (btnpress & 0x01);
+   prevButtonStatus1 = (btnpress & 0x02);
+   
+   }
+

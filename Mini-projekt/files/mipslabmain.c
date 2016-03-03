@@ -47,9 +47,9 @@ int main(void) {
 	/* SPI2CON bit ON = 1; */
 	SPI2CONSET = 0x8000;
         
+        
 	display_init();
         
-	display_update();
         
         labinit(); /* Do any lab-specific initialization */
 	

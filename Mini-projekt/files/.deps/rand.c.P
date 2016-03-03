@@ -1,0 +1,2 @@
+rand.c.o: rand.c rand.h /opt/mcb32tools/include/pic32mx.h
+rand.c rand.h /opt/mcb32tools/include/pic32mx.h :
