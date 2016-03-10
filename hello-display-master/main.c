@@ -247,7 +247,7 @@ int main(void) {
 	SPI2CONSET = 0x8000;
 	
 	display_init();
-        while(1)
+        while(gameOver == 0)
         {
             display_update();
             quicksleep(10000000);

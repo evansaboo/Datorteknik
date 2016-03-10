@@ -13,21 +13,18 @@
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
-
 volatile int* ledinit;
 volatile int* ledoutput;
 
-
+        
 /* Interrupt Service Routine */
 void user_isr( void )
 {
   return;
 }
-
-/* Lab-specific initialization goes here */
+/* Game-specific initialization goes here */
 void labinit( void )
-{
-    
+{   
     ledinit = (volatile int*) 0xbf886100;
     *ledinit = 0;
     ledoutput = (volatile int*) 0xbf886110;
@@ -42,11 +39,13 @@ void labinit( void )
     TMR2 = 0;
     
     int x, i;
-
+    
+    /*initialize game track*/
     for (i = 0; i < 4; i++)
         for (x = 0; x < 128; x++)
            snake[i][x] = icon[(i * 128) + x]; 
     
+    /*initialize snake*/
      for (i = lengthStart; i <= lengthEnd; i++)
         snake[globalPage][i] = 1;
     
@@ -54,8 +53,14 @@ void labinit( void )
         snakeTail[i] = snakeHead - (8 * ((lengthEnd - lengthStart) - (i)));
     
     T2CONSET = 0x8000;
+    /*Initialize apple*/
          set_apple();
-  
+     
+   /*Display score on page 1*/
+   display_string(0, score);
+   
+   /*Countdown before game begins*/
+   countdown();
     return;
 }
 
@@ -66,22 +71,25 @@ void labwork( void ) {
    if(IFS(0)){
        IFS(0) = 0;
             snake_length();
-            display_update();
+            display_string(0, score);
+            display_update(0);
             nextButton += 1;
-            *ledoutput = score;
+            *ledoutput = scoreLed;
    }
+               
+   while(getsw() & 0x08); // Pause the game
+   
    if(nextButton > 2){
-    if((btnpress & 0x01) == 1 && (prevButtonStatus != (btnpress & 0x01))){    
+    if((btnpress & 0x01) && (prevButtonStatus ^ (btnpress & 0x01))){    
       buttonStatus++;
       nextButton = 0;
       if (buttonStatus > 3)        
           buttonStatus = 0;
   }   
-    else if((btnpress & 0x02) == 2 && (prevButtonStatus1 != (btnpress & 0x02)))
+    else if((btnpress & 0x02) && (prevButtonStatus1 ^ (btnpress & 0x02)))
     {
       buttonStatus--;
       nextButton = 0;
-      prevButtonStatus1 = (btnpress & 0x02);
       if (buttonStatus < 0)
           buttonStatus = 3;
     }

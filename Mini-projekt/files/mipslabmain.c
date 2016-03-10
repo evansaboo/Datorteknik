@@ -46,17 +46,16 @@ int main(void) {
 	SPI2CONSET = 0x20;
 	/* SPI2CON bit ON = 1; */
 	SPI2CONSET = 0x8000;
+	display_init(); /* Display initialization */
         
-        
-	display_init();
-        
-        
-        labinit(); /* Do any lab-specific initialization */
-	
-
-	while( 1 )
+        while(1){
+        labinit(); /* Do any game-specific initialization */
+	while( gameOver == 0 )
 	{
-             labwork(); /* Do lab-specific things again and again */
+             labwork(); /* Do game-specific functions again and again */
 	}
-	return 0;
+        game_over();
+        restart();
+        }
+	return 0; /* Program should never reach this line of code */
 }

@@ -7,7 +7,8 @@
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
-#include <stdlib.h>
+#include "rand.h"
+
 
 /* Declare a helper function which is local to this file */
 
@@ -38,7 +39,7 @@ uint8_t spi_send_recv(uint8_t data) {
 	while(!(SPI2STAT & 1));
 	return SPI2BUF;
 }
-
+// Display initialization
 void display_init(void) {
         DISPLAY_CHANGE_TO_COMMAND_MODE;
 	quicksleep(10);
@@ -68,76 +69,106 @@ void display_init(void) {
 	
 	spi_send_recv(0xAF);
 }
-
+//Game over and restart the game
 void game_over(){
-    while(1){
-        
+            int x, i;
+    for (i = 0; i < 4; i++)
+        for (x = 0; x < 128; x++){
+           snake[i][x] = gameOverScreen[(i * 128) + x];
+        }
+            display_string(3, score);
+    display_update(20000);
+    
+    char loop = 1;
+    while(loop){
+    if(getbtns())
+        loop = 0;
     }
 }
+
+//Starts a countdown before the game begins
+void countdown(){
+    int i, j;
+    char count[] = {0x2A, 0x033, 0x033, 0x2A};
+    for(i = 0; i < 3 ; i++){
+       display_string(2, count);
+       for(j = 1; j < 3; j++)
+            count[j] -= 1;
+       display_update(0);
+       quicksleep(10000000);
+    }
+    display_string(2, "*GO*");
+}
+
+//Activates a pxiel depending on X-axis and Y-axis
 void set_pixel( int x, int y)
 {
     int number = (snakeHead - (8 * ((lengthEnd + (128 * globalPage)))));
     if(number == 0){
         if(snake[x][y] & 0x01 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 1;
     }
     
     if(number == 1){
         if(snake[x][y] & 0x02 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 2;
     }
     
     if(number == 2){
         if(snake[x][y] & 0x04 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 4;
     }
     
     if(number == 3){
         if(snake[x][y] & 0x08 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 8;
     }
     
     if(number == 4){
         if(snake[x][y] & 0x10 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 16;
     }
     
     if(number == 5){
         if(snake[x][y] & 0x20 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 32;
     }
     
     if(number == 6){
         if(snake[x][y] & 0x40 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 64;}
     
     if(number == 7){
         if(snake[x][y] & 0x80 && apple != snakeHead)
-            game_over();
+            gameOver = 1;
         else
         snake[x][y] |= 128;
     }
     
 }
+
+//Sets a apple on a random position on the screen
 void set_apple(){
         int loop = 1;
         while (loop)
         {
-            apple = rand() % 4096;
+            apple = rand(4096);
+            while((apple >= 0 && apple <= 263) ||(apple >= 1024 && apple <= 1287) || (apple >= 2047 && apple <= 2311) || (apple >= 3071 && apple <= 3370))
+            apple = rand(4096);
             
             column = (apple % (128*8)) / 8;
             page = apple / (128 * 8);
@@ -188,7 +219,9 @@ void set_apple(){
                     loop = 0; 
             }
         }  
-} 
+}
+
+//Delete a pixel on snake tails prev position 
 void delete_pixel(){
     int i;
     
@@ -228,7 +261,22 @@ void delete_pixel(){
         snakeTail[i] = snakeTail[i+1];
     snakeTail[snakeLength - 1] = snakeHead;
 }
+// Add a point to current score
+void addPoint(){
+    score[3] += 1;
+    scoreLed += 1;
+    int i;
+    for(i = 3; i >= 0; i--){
+    if(score[i] > 0x39)
+    {
+        score[i] = 0x030;
+        score[i-1] = score[i-1] + 1;
+    }
+    }
 
+}
+
+//Snake moving to 4 positions
 void snake_length()
 {
     switch(buttonStatus){
@@ -236,7 +284,7 @@ void snake_length()
               if (globalPage > 0 && (snakeHead % 8 == 0))
                 {
                 if (snakeHead == apple) {
-                        score +=1;
+                        addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -249,7 +297,7 @@ void snake_length()
                     break;
                 }
                 if (snakeHead == apple) {
-                        score +=1;
+                        addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -262,7 +310,7 @@ void snake_length()
             
         case 1: // ormen rör sig åt höger
                 if (snakeHead == apple) {
-                        score +=1;
+                        addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -278,7 +326,7 @@ void snake_length()
             if (globalPage < 3 && (snakeHead % 8 == 7))
             {
                 if (snakeHead == apple) {
-                        score +=1;
+                        addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -291,7 +339,7 @@ void snake_length()
                 break;
             }
             if (snakeHead == apple) {
-                    score +=1;
+                    addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -303,7 +351,7 @@ void snake_length()
             break;
         case 3: // ormen rör sig åt vänster
             if (snakeHead == apple) {
-                    score +=1;
+                    addPoint();
                     snakeLength++;
                     set_apple();
                     snakeTail[snakeLength - 1] = snakeHead;
@@ -316,8 +364,9 @@ void snake_length()
             break; 
     }
 } 
-      
-void display_update() {
+
+//Update I/O shield screen
+void display_update(int value) {
 	int i, j;
 
 	for(i = 0; i < 4; i++) {
@@ -330,33 +379,30 @@ void display_update() {
 		
 		DISPLAY_CHANGE_TO_DATA_MODE;
 		
-		for(j = 0; j < 128; j++)
+		for(j = 0; j < 128; j++){
 			spi_send_recv(snake[i][j]);
+                        quicksleep(value);
                          
 		}
 	}
+}
 
-/*void display_snake()
-{
-	int i, j;  
+//Display any string related value depending on page 1-4.
+void display_string(int line, char *s) {
+	int i, k, c;
+	if(!s)
+		return;
         
-        for (i = 0; i < 4; i++)
-        {
-            for (j = 2; j < 126; j++)
-            {
-                if (i == 0)
-                {
-                    snake[i][j] = (snake[i][j] & 0xfe) + 1;
-                    icon[i*128 + j] = snake[i][j];   
-                }
-            if (i == 3)
-            {
-                snake[i][j] = (snake[i][j] & 0x7F) + 0x80;
-                icon[i*128 + j] = snake[i][j];
-            }
-            if (i == 2 || i == 1)
-                icon[i*128 + j] = snake[i][j];
-        }
+	for(i = 0; i < 4; i++){
+		if(*s) {
+			textbuffer[i] = *s;
+			s++;
+                  c = textbuffer[i];
+			if(c & 0x80)
+				continue;
+			
+			for(k = 0; k < 8; k++)
+				snake[line][i*8 + k] = font[c*8 + k];
         }
 }
- **/
+}
